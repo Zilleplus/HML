@@ -1,0 +1,2 @@
+# Is TensorFlow a drop-in replacement for Numpy? What are the main differences between the two?
+No you need to use the tensorflow operations that are sometimes slightly different. As the operations can work on a distributed system, some of the operations have a different name. Such as "sum" becomes "reduce_sum". Also tensorflow can handle tensors which are a generalization of matrices and vectors in more dimenesions.
