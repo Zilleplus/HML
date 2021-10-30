@@ -1,1 +1,41 @@
-\chapter{Mutli-armed bandits}
+\chapter{Monte Carlo Methods}
+
+\section{Exercises}
+
+\subsection{Exercise 5.1 page 94}
+The last 2 rows in the rear means you either have 21, or 20, which means the odd's are very good you will win. (hence high value function)
+
+The last row on the left means the dealer has an ace, so it's at an advantage to get a higher score.
+
+The front row's are higher on the upper diagram, as there is a usuable ace. Which means that if you get a bad hit that put's you over 21. It can count as 1.
+
+\subsection{Exercise 5.2 page 94}
+As this is Markov process eg. The cards drawn are not exhaustible. The odds of winning on the second time your in the same state is just as good as the first time.
+
+\subsection{Exercise 5.4 page 99}
+The "Append G to Returns ($S_{t} , A_{t}$) would be replaced by increasing a count and added it as running average to some table.
+
+\subsection{Exercise 5.5 page 105}
+10 Steps means 9 towards the non-terminal, and one towards the terminal. The rewards are all-way's the same so the final cost=10. 
+
+If $\gamma = 1$ then $G=G+\gamma R_{k+1}$ in every iteration. 
+
+In case of all visit the complete horizon counts 10 times in the non-terminal state, as the 10th time we leave the non-terminal state for good and enter the terminal state. $(1+2+3+4+5+6+7+8+9+10)/10 = 55/10 = 5.5$ So the value is 5.
+
+In case of the first-visit, we only count the first visit which has a reward of 1.
+
+\subsection{Exercise 5.6 page 108}
+Q(s, a) is similar to V(s), it takes the V(s) given a certain step was taken first.
+
+\begin{equation}
+Q(s, a) = \frac{\sum_{t \in J(s,a)} \rho_{t+1:T(t)-1} G_t }{\sum_{t \in J(s,a)} \rho_{t+1:T(t)-1}}
+\end{equation}
+
+\subsection{Exercise 5.7 page 108}
+If there are but a few samples, the bias will be the dominating error. And it will increase as more and more samples are added. Until there are so many samples, it starts to disappear.
+
+\subsection{Exercise 5.8 page 108}
+A first Visit MC has less terms then a every Visit MC. All terms have a positive value, so it would also go to infinite.
+
+\subsection{Exercise 5.11 page 111}
+If the target policy is a greedy deterministic policy, and the loop is broken off if $\pi (S_t) \neq A_t$. Then $\pi(A_t|S_t)=1$ by definition.  
