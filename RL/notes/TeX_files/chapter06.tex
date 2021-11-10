@@ -1,0 +1,78 @@
+\chapter{TD Prediction}
+
+\section{Exercises}
+
+\subsection{Exercise 6.1}
+
+\begin{equation}
+V_{t+1}(s_{t}) = \alpha [R_{t+1} + \gamma V_t(s_{t+1})-V_t(s_t)] + V_t(s_t)
+\label{eq:difference value function update}
+\end{equation}
+
+
+The difference between the value function at time t and t+1 is defined by equation~\ref{eq:difference value function update}.
+
+The equality $G_t = R_{t+1} + \gamma G_{t+1}$ still holds. However the monte carlo error is slightly different in every iteration. $G_t - V_t(s_t)$ becomes $G_{t+1} - V_{t+1}(s_{t+1})$ in the next iteration. As the value function now changes at iteration t, with a difference of  $d_t = \alpha [R_{t+1} + \gamma V_t(s_{t+1})-V_t(s_t)]$.
+
+\begin{equation}
+G_{t+1} - V_t(S_{t+1}) = G_{t+1} - V_{t+1}(S_{t+1})-d_{t+1}
+\label{eq:single iteration difference}
+\end{equation}
+
+\begin{equation}
+error = -\sum_{k=t+1}^{T-1} \gamma^{k-t} d_{k-1}
+\label{eq:ex_6_1_difference}
+\end{equation}
+
+In conclusion the different factor is equation~\ref{eq:ex_6_1_difference}.
+
+\subsection{Exercise 6.2}
+If (as explained in the example of the hint) a part of the statespace is already well estimated. Then the TD prediction will be very good as you enter those states and if your path ends on one of those states. So you only have lesser predictions while in an unexplored part.
+
+The Monte Carlo approach would still need to evaluate through the already well estimated part. Which is rather slow.
+
+\subsection{Exercise 6.3}
+The change on a value function is defined by:  $\alpha [R_{t+1} + \gamma V_t(s_{t+1})-V_t(s_t)] = 0.1[0 + 0 - 0.5]=-0.05$ if $V_t(s_{+1}=0)$ so it ends on the left terminal state. And $\alpha=0.1$ and $V_t(A)=0.5$.
+
+\subsection{Exercise 6.4}
+The TD algo is over-fitting when $\alpha>0.05$ we could try to make it a bit smaller. But at $\alpha=0.05$ it seems to flatten out nicely, so I would not expect better results.
+
+A similar story with the MC method, this time at $\alpha0.02$ we get a nice flat tail. It's not as clear as with the TD method, but that's due the larger variance on the MC method.
+
+So no, I would not expect any changes in results if more samples were ran with different values for $\alpha$.
+
+\subsection{Exercise 6.5}
+Overfitting, the step is too large so TD cannot find the optimal values. But keeps over/under estimating every time it runs through an episode.
+
+\subsection{Exercise 6.6}
+You setup the bellman optionality equation, and the pick a method to solve it. As this is a rather simple example, you could just manually solve the equation.
+
+\begin{equation}
+\begin{split}
+V(A) = 0.5 V(B)\\
+V(B) = 0.5 V(A) + 0.5 V(C)\\
+V(C) = 0.5 V(B) + 0.5 V(D)\\
+V(D) = 0.5 V(C) + 0.5 V(E)\\
+V(E) = 0.5 V(D) + 0.5\\
+\end{split}
+\end{equation}
+
+This seems like the simplest way to do it, as it's small.
+
+\subsection{Exercise 6.7}
+The normal on-policy TD(0) update looks like $V(s_t) = V(S_t) + \alpha[R_{t+1}+\gamma V(S_{t+1}) - V(S_t)]$. I would expect that $\alpha=\frac{\rho}{\sum_t \rho_t }$ as it becomes a weighted average due too the importance sampling.
+
+\subsection{Exercise 6.8}
+todo, not hard, but a bit of bookkeeping to be done.
+
+\subsection{Exercise 6.11}
+In Q-learning the actions that are applied to the system are learning through a $\epsilon$-greedy policy(behavior policy). While the prediction (Q) uses the greedy policy(target policy). 
+
+\subsection{Exercise 6.12}
+No, in that case the action used for the prediction, would not be applied to the system. It would result in poorer performance then sarsa, as it would wrongly estimate the value of taking a certain action(not on average, but in 1 specific sample).
+
+\subsection{Exercise 6.13}
+todo
+
+\subsection{Exercise 6.14}
+todo
