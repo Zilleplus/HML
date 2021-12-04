@@ -1,5 +1,66 @@
 \chapter{TD Prediction}
 
+\section{Summary}
+
+\subsection{TD prediction}
+
+The basic formula for monte carlo prediction is $V(S_t)=V(S_t)+\alpha [G_t - V(S_t)]$. $G_t$ is the final result, this means that the update only can happen at the end of the simulation. By replacing $G_t$ with $R_{t+1} V(S_{t+1})$ we get the TD method $V(S_t) := V(S_t)+\alpha [R_{t+1} + \gamma V(S_{t+1}) - V(S_t)]$.
+
+The update of the TD method is called the \textbf{TD error} $\delta = G_t - R_{t+1} V(S_{t+1})$. An equivalent entity exists with monte carlo methods, and is called the monte-carlo error. The monte carlo error can be written as a sum of TD errors, illustrated by equation \ref{eq:monte carlo error is a sum of td errors}. (proof on page 121)
+
+\begin{equation}
+G_t - V(S_t) = \sum_{k=t}^{T-1} \gamma^{k-t} \delta_k
+\label{eq:monte carlo error is a sum of td errors}
+\end{equation}
+
+\subsection{TD Advantages}
+
+\begin{enumerate}
+	\item No model of the behavior is required
+	\item Naturally online/incremental algorithm (useful with long episodes)
+	\item Learns from experimental choices (monte carlo need to discard them)
+	\item In practice faster then monte carlo methods
+\end{enumerate}
+
+\subsection{Optimality of TD(0)}
+When using batch learning, as in only changing the value function everytime a whole batch is processes. TD(0) and Monte Carlo do not converge to the same solution. Monte Carlo methods finds the solution that minimized the error on the dataset. TD(0) finds the parameters that most like would cause a markov process to result in the dataset. This is called the certainty-equivalence estimate.
+
+\subsection{SARSA}
+SARSA stands for $S_t,A_t,R_{t+1},S_{t+1}, A_{t+1}$. It uses an policy to generate $A_{t}$ and $A_{t+1}$. Updates the Q value, applies $A_{t+1}$ and then finds the next input $A_{t+2}$. 
+
+\begin{equation}
+Q(S_t, A_t) := Q(S_t, A_t) + \alpha [R_{t+1} + \gamma Q(S_{t+1}, A_{t+1})-Q(S_t, A_t)]
+\end{equation}
+
+\subsection{Q-Learning}
+Q-learning acts greedily in when predicting, but acts according to it's policy when finding an input to apply to the system. So in contrast to SARSA it won't reuse $A_{t+1}$ it generated when predicting.
+
+\begin{equation}
+Q(S_t, A_t) := Q(S_t, A_t) + \alpha [R_{t+1} + \gamma \max_a Q(S_{t+1},a) - Q(S_t, A_t)]
+\label{eq:Q learning update}
+\end{equation}
+
+\subsection{Difference between SARSA and Q-Learning}
+SARSA will act a bit more carefull, as it's prediction is not greedy. And it takes into account that the next action might not be the best one. Q-Learning will take the more risky route, as it uses the best(according to Q(S, A)) possible action in it's prediction.
+
+\subsection{Expected Sarsa}
+Expected SARSA uses the expected value of all possible actions $A_{t+1}$ given the policy. Then it uses a greedy policy to act, just like with Q-learning. Expected Sarsa will work with $\alpha=1$, which would not work very will with classical SARSA. This makes the short term behavior much better. But is more computational expensive.
+
+\begin{equation}
+Q(S_t, A_t) := Q(S_t, A_t) + \alpha [R_{t+1} + \gamma \EX[Q(A_{t+1}, S_{t+1})|S_{t+1}] - Q(s_t, A_t)]
+\label{eq:expected sarsa update rule}
+\end{equation}
+
+\subsection{Double learning}
+Equation~\ref{eq:Q learning update} uses an argmax to estimate the value of Q. If one of these estimates is over-estimated, it will result in bad behavior(bias). Double learning reduces the odds of this happening by using two $Q(A,S)$ estimates. One to find the maximum action, and one to estimate it's value.(equation~\ref{eq:estimation double learning}) It's less like that the overestimate will happen this way. 
+
+\begin{equation}
+A = Q_2(\argmax_a Q1(S,a))
+\label{eq:estimation double learning}
+\end{equation}
+ 
+ It's good practice to swap $Q_1$ and $Q_2$ in equation~\ref{eq:estimation double learning} constantly. For example at random with odds 50/50.
+ 
 \section{Exercises}
 
 \subsection{Exercise 6.1}
@@ -8,7 +69,6 @@
 V_{t+1}(s_{t}) = \alpha [R_{t+1} + \gamma V_t(s_{t+1})-V_t(s_t)] + V_t(s_t)
 \label{eq:difference value function update}
 \end{equation}
-
 
 The difference between the value function at time t and t+1 is defined by equation~\ref{eq:difference value function update}.
 
@@ -32,7 +92,7 @@ If (as explained in the example of the hint) a part of the statespace is already
 The Monte Carlo approach would still need to evaluate through the already well estimated part. Which is rather slow.
 
 \subsection{Exercise 6.3}
-The change on a value function is defined by:  $\alpha [R_{t+1} + \gamma V_t(s_{t+1})-V_t(s_t)] = 0.1[0 + 0 - 0.5]=-0.05$ if $V_t(s_{+1}=0)$ so it ends on the left terminal state. And $\alpha=0.1$ and $V_t(A)=0.5$.
+The change on a value function is defined by:  $\alpha [R_{t+1} + \gamma V_t(s_{t+1})-V_t(s_t)] = 0.1[0 + 0 - 0.5]=-0.05$ if $V_t(s_{+1}) = 0$ so it ends on the left terminal state. And $\alpha=0.1$ and $V_t(A)=0.5$.
 
 \subsection{Exercise 6.4}
 The TD algo is over-fitting when $\alpha>0.05$ we could try to make it a bit smaller. But at $\alpha=0.05$ it seems to flatten out nicely, so I would not expect better results.
@@ -66,10 +126,10 @@ The normal on-policy TD(0) update looks like $V(s_t) = V(S_t) + \alpha[R_{t+1}+\
 todo, not hard, but a bit of bookkeeping to be done.
 
 \subsection{Exercise 6.11}
-In Q-learning the actions that are applied to the system are learning through a $\epsilon$-greedy policy(behavior policy). While the prediction (Q) uses the greedy policy(target policy). 
+In Q-learning the actions that are applied to the system are learning through a $\epsilon$-greedy policy(behavior policy) are not used for the prediction(Q). This is by definition an off-policy control.
 
 \subsection{Exercise 6.12}
-No, in that case the action used for the prediction, would not be applied to the system. It would result in poorer performance then sarsa, as it would wrongly estimate the value of taking a certain action(not on average, but in 1 specific sample).
+It would be nearly the same, SARSA selects the next action before updating Q and Q-learning selects it after. So the update of Q might make a difference in some cases.
 
 \subsection{Exercise 6.13}
 todo
