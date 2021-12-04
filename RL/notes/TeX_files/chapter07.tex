@@ -1,4 +1,113 @@
 \chapter{n-step bootstrapping}
+\section{Summary}
+
+\subsection{n-step TD prediction}
+
+Monte Carlo updates the estimate $V(S)$ using the complete return (equation~\ref{eq:complete return of an episode}. TD(0) only watches one step ahead, a compromised is too take an n-step prediction window as illustrated by equation~\ref{eq:return estimate for n step method}. The state learning algorithm them becomes equation~\ref{eq:state learning algorithm n-step return}.
+
+\begin{equation}
+G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + ... + \gamma^{T-t-1}R_T
+\label{eq:complete return of an episode}
+\end{equation}
+
+\begin{equation}
+G_{t:t+n} = R_{t+1} + \gamma R_{t+2} + ... \gamma^{n--1} R_{t+n} + \gamma^nV_{t+n-1}(S_{t+n})
+\label{eq:return estimate for n step method}
+\end{equation}
+
+\begin{equation}
+V_{t+n}(S_t) = V_{t+n-1}(S_t) + \alpha [G_{t:t+n} - V_{t+n-1}(S_t)]
+\label{eq:state learning algorithm n-step return}
+\end{equation}
+
+\subsection{n-step Sarsa}
+
+The previous Sarsa is often called Sarsa(0), the generalized version is call n-step Sarsa. The return value can be estimated by equation~\ref{eq:return estimate for n step sarsa}. The update rule for Q then becomes equation~\ref{eq:n step sarsa learning algorithm}.
+
+\begin{equation}
+G_{t:t+n} = R_{t+1} + \gamma R_{t+2} ... \gamma^{n-1} R_{t+n-1} \gamma^n Q_{t+n-1}(S_{t+n}, A_{t+n})
+\label{eq:return estimate for n step sarsa}
+\end{equation}
+
+\begin{equation}
+Q_{t+n}(S_{t}, A_{t}) := Q_{t+n-1}(S_t, A_t) + \alpha \left[G_{t:t+n} - Q_{t+n-1}(S_t, A_t)\right]
+\label{eq:n step sarsa learning algorithm}
+\end{equation}
+
+The same logic can be applied to expected SARSA. The value function can be defined as equation~\ref{eq:expected n step sarsa value function}. Using equation~\ref{eq:expected n step sarsa value function} the n-step expected sarsa return value is defined by equation~\ref{eq:n step expected sarsa return value}. The update is still equation~\ref{eq:n step sarsa learning algorithm} but using the new $G_{t:t+n}$ from equation~\ref{eq:n step expected sarsa return value}.
+
+\begin{equation}
+V_t(S_t) = \sum_a P(a) Q(S_t, a)
+\label{eq:expected n step sarsa value function}
+\end{equation}
+
+\begin{equation}
+G_{t:t+n} = R_{t} + \gamma R_{t+1} + ... \gamma^{n-1} R_{t+n-1} + V_t(S_{t+n}, A_{t+n})
+\label{eq:n step expected sarsa return value}
+\end{equation}
+
+\subsection{n-step Off-policy Learning}
+
+\begin{equation}
+Q_{t+n}(S_{t}, A_{t}) := Q_{t+n-1}(S_t, A_t) + \rho_{t:t+n} \alpha \left[G_{t:t+n} - Q_{t+n-1}(S_t, A_t)\right]
+\label{eq:n step off policy sarsa learning algorithm}
+\end{equation}
+
+\begin{equation}
+V_{t+n}(S_t) = V_{t+n-1}(S_t) + \rho_{t:t+n-1} \alpha [G_{t:t+n} - V_{t+n-1}(S_t)]
+\label{eq:state learning algorithm n-step off policy return}
+\end{equation}
+
+\begin{equation}
+\rho_{t:h} = \prod_{k=t}^{min(h, T-1)} \frac{\pi(A_k|S_k)}{b(A_k|S_k)}
+\label{eq:n step off policy sarsa importance sampling ratio}
+\end{equation}
+
+\subsection{Per Decision  Methods with Control Variates}
+
+The previous sections are inefficient implementations of the n-step algorithm. The n-step return can be written recursively as $G_{t:h} = R_{t+1} + \gamma G_{t+1:h}$, with $G_{h:h}=V_{n-1}(S_h)$. The importance sampling weighting is still $\rho_t = \frac{\pi(S_t, A_t)}{b(s_t, A_t)}$. Using this recursive definition we can define the return as equation~\ref{eq:off policy definition of return estimate with control variate}.
+
+\begin{equation}
+G_{t:h} = \rho_t(R_{t+1} + \gamma G_{t+1:h}) + (1-\rho) V_{h-1}(S_t)
+\label{eq:off policy definition of return estimate with control variate}
+\end{equation}
+
+The term $(1-\rho) V_{h-1}(S_t)$ in equation~\ref{eq:off policy definition of return estimate with control variate} is called the control variate. It has an expected value of one because $\EX[\rho]=1$ so $\EX[1-\rho]=0$.
+
+The return state of a n-step off policy with control variate is defined by equation~\ref{eq:n step off policy form with control variate}. The recursion ends with $G_{h:h}=Q_{h-1}(S_h, A_h)$
+
+\begin{equation}
+G_{t:h} = R_{t+1} + \gamma [ \rho_{t+1} G_{t+1:h} + V_{h-1}(S_{t+1})-\rho_{t+1}Q_{h-1}(S_{t+1}, A_{t+1})]
+\label{eq:n step off policy form with control variate}
+\end{equation}
+
+
+\subsection{Off-Policy Learning Without Importance Sampling: The n-step Tree Backup Algorithm}
+
+Instead of only using the value estimations of the actual path taken in n-steps. We can generalize the expected SARSA algorithm, from equation~\ref{eq:one step return expected sarsa} to equation~\ref{eq:tree backup rule n-step return}. 
+
+\begin{equation}
+G_{t:t+1} = R_{t+1} + \gamma \sum_{a} \pi (a | S_{t+1})Q_t(S_{t+1}, a)
+\label{eq:one step return expected sarsa}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+G_{t:t+n} & = R_{t+1} + \gamma \sum_{a \neq A_{t+1}} \pi (a|S_{t+1})Q_{t+n-1}(S_{t+1},a) + \gamma \pi(A_{t+1}|S_{t+1})G_{t+1:t+n} \\
+& = R_{t+1} + \gamma \pi (A_{t+1}| S_{t+1}) [G_{t+1:h}-Q_{h-1}(S_{t+1}, A_{t+1})] + \gamma V_{h-1} (S_{t+1})
+\label{eq:tree backup rule n-step return}
+\end{split}
+\end{equation}
+
+Adding the control variate to Equation~\ref{eq:tree backup rule n-step return} gives equation~\ref{eq:n-step sigma}.
+
+\begin{equation}
+G_{t:t+n}  = R_{t+1} + \gamma \pi (\sigma_{t+1}\rho_{t+1} + (1-\sigma_{t+1})\pi(A_{t+1}|S_{t+1})) [G_{t+1:h}-Q_{h-1}(S_{t+1}, A_{t+1})] + \gamma V_{h-1} (S_{t+1})
+\label{eq:n-step sigma}
+\end{equation}
+
+\subsection{*A Unifying Algorithm: n-step Q(Sigma)}
+
 
 \section{Exercises}
 
@@ -40,3 +149,16 @@ G_t - V(S_t)\\
 $
 
 I don't see how to continue from here. 
+
+\subsection{Excercise 7.3 page 145}
+\textbf{question: Why do you think a larger random walk task (19 states instead of 5) was in the examples of this chapter? Would a smaller walk have shifted the advantage to a different value of n? How about the change in left-side outcome form 0 to -1 made in the larger walk? Do you think that made any difference in the best value of n?}
+
+If a random walk with length of 5 was used the results would not be best around an n of 4 or 8. As a you need a large enough episode to learn from a step of 4 or 8 samples.
+
+When the walk is smaller, smaller n's will give better results then current results. 
+
+If the left side is negative, the first time the walk will go into it. That negative result will propagate n-steps, instead of 1 with TD(0).
+
+\subsection{Excercise 7.4 page 148}
+Similar to excercise 7.1, still TODO, first finish 7.1.
+
