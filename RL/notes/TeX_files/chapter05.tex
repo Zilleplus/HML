@@ -1,5 +1,230 @@
 \chapter{Monte Carlo Methods}
 
+\section{Summary}
+
+Monte Carlo methods require not model of the system, they work with samples. So they are based on \textbf{experience}.
+
+\subsection{Monte Carlo Prediction}
+Monte carlo prediction creates a trajectory/sample of the system. Starting from a certain state, following a certain policy $v_{\pi}$. And averaging the returns (equation~\ref{eq:monte carlo prediction})to the value function. The error on the standard deviation of the value function drops by $\frac{1}{\sqrt{n}}$ with $n$ as the number of average returns.
+
+\begin{equation}
+    G_t := \gamma G_{t+1} + R_{t+1}
+    \label{eq:monte carlo prediction}
+\end{equation}
+
+\subsection{Monte Carlo Estimation of action values}
+If no model is available $v_{\pi}(s)$ is not sufficient, as it's not clear what actions can be taken. We need to estimate the value function of the state/action pair $q(s,a)$.
+
+Monte Carlo methods can suffer from the \textbf{problem of maintaining exploration}, as not all state/action combinations might be visited. One solution the this problem is using \textbf{exploring starts}, every state/action combination has an equal probability to be used as start state/action.
+
+\subsection{Monte Carlo Control with exploring starts}
+
+Just as with \textbf{dynamic programming} the principle of \textbf{generalized policy iteration} can be used. Monte Carlo exploring state is illustrated in Figure~\ref{fig:monte carlo exploring starts}, it uses a random start pair to avoid the \textbf{exploring state problem}.
+
+\begin{figure}[H]
+	\begin{enumerate}
+		\item Take random $S_0$ and $A_0$
+		\item Generate an entire episode
+		\item Average the returns
+		\item Create an improved policy $\pi(s_t) = \argmax_a +(s_t, a)$ and repeat
+	\end{enumerate}
+\label{fig:monte carlo exploring starts}
+\caption{Monte Carlo Exploring starts}
+\end{figure}
+
+\subsection{Monte Carlo without exploring starts}
+Online policy methods generally use \textbf{soft policies}. Soft policies have a no-zero probability for every action $p(a | s)>0$.
+
+\subsubsection{On-policy method}
+
+$\epsilon$-Greedy is a commonly used online policy, illustrated in equation~\ref{eq:epsilon greedy on-policy}. Generaly Policy iteration only requires that the policy moves towards the greedy policy. Which is still true, just a bit slower.
+
+\begin{equation}
+\begin{split}
+p_{non-greedy} & = \frac{\epsilon}{A(s)} \\
+p_{greedy}& = 1 - \epsilon + \frac{\epsilon}{A(s)}
+\end{split}
+\label{eq:epsilon greedy on-policy}
+\end{equation}
+
+\subsubsection{Off-policy method}
+
+\begin{itemize}
+	\item $\pi(a|s)$: target policy
+	\item $b(a|s)$: behavior policy
+	\item Assumption of coverage: $b(a|s)>0$
+	\item $G_t$ return after t
+	\item $\tau(s)$ set of all time steps when s was visited.
+	\item $T(t)$ first time of termination
+\end{itemize}
+
+\textbf{Importance sampling} is used in off-policy methods to translate the returns from the behavior policy to the target policy. Given a starting state $S_t$, the probability of a certain trajectory is defined by equation~\ref{eq:probablity certain trajector off-policy method}. The relation between the likelyhood of a trajectory using the behavior policy and the target policy is called the \textbf{importance-sampling ratio}. It's defined by equation~\ref{eq:definition importance sampling}. The value function of the target policy simulate under the behavior policy is equation~\ref{eq:value function target policy under behavior policy}.
+
+\begin{equation}
+\begin{split}
+& p(A_t, S_{t+1}, A_{t+1}... S_T| S_t, A_{t:T-1} \sim \pi)\\
+& = \prod_{k=t}^{T-1} \pi(A_k | S_k)p(S_{k+1}|S_k, A_k)
+\end{split}
+\label{eq:probablity certain trajector off-policy method}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\rho_{t:T-1}
+& = \frac{\prod_{k=t}^{T-1} \pi(A_k | S_k)p(S_{k+1}|S_k, A_k)}{\prod_{k=t}^{T-1} b(A_k | S_k)p(S_{k+1}|S_k, A_k)}\\
+& = \frac{\prod_{k=t}^{T-1} \pi(A_k | S_k)}{\prod_{k=t}^{T-1} b(A_k | S_k)}
+\label{eq:definition importance sampling}
+\end{split}
+\end{equation}
+
+\begin{equation}
+\EX[\rho_{t:T-1} G_t | s_t = s] =  v_{\pi}(s)
+\label{eq:value function target policy under behavior policy}
+\end{equation}
+
+There are 2 variants of importance sampling that can be used. Either \textbf{ordinary} (equation~\ref{eq:ordinary importance sampling}) or \textbf{weighted} (equation~\ref{eq:weighted importance sampling}). The ordinary makes at first sight the most sense as it has no bias. It does however have an unbounded variance, which weight importance simple does not have. In practice weight variance tends to perform better. 
+
+\begin{equation}
+V_{\text{ordinary}}(s) = \frac{\sum_{t\in \tau(s)} \rho_{t:T(t)-1}G_t}{|\tau(s)|}
+\label{eq:ordinary importance sampling}
+\end{equation}
+
+\begin{equation}
+V_{\text{weighted}}(s) = \frac{\sum_{t\in \tau(s)} \rho_{t:T(t)-1}G_t}{\sum_{t\in \tau(s)} \rho_{t:T(t)-1}}
+\label{eq:weighted importance sampling}
+\end{equation}
+
+
+\begin{center}
+\begin{tabular}{ c | c}
+ordinary importance sampling & weighted importance sampling \\
+\hline
+unbiased & biased but asymptotically converges to zero \\
+unbound variance & bound variance
+\end{tabular}	
+\end{center}
+
+Importance sampling can use recursion to incrementally implement the value function.(equation~\ref{eq:recursive importance sampling}) with $W_n = \rho_{t_n:T(t)-1}$ 
+
+\begin{equation}
+\begin{split}
+&V_{k+1} = V_n + \frac{W_n}{C_n}[G_n - V_n] \\
+&C_{n+1} = C_n + W_{n+1} \\
+&W_{n+1} = \frac{\pi(A_t | S_t)}{b(A_t | S_t)}W_n
+\end{split}
+\label{eq:recursive importance sampling}
+\end{equation}
+
+\subsection{Off-Policy Monte Carlo Control}
+
+\begin{algorithm}
+\begin{algorithmic}
+	\State $G \gets 0$
+	\State $W \gets 1$
+	\For{$t \gets T-1$  to $0$}
+		\State $G \gets \gamma G + R_{t+1}$
+		\State $C(S_t, A_t) \gets C(S_t, A_t) + W$
+		\State $Q(S_t, A_t) \gets Q(S_t, A_t) + \frac{W}{C(S_t, A_t)}[G-Q(S_t, A_t)]$
+		\State $\pi(S_t) \gets \argmax_a(Q(S_t,a))$
+		\If{$A_t \neq \pi(S_t)$}
+			\State break
+		\EndIf
+		\State $W=\frac{1}{b(A_t|S_t)}$
+	\EndFor
+\end{algorithmic}
+\caption{Off policy monte carlo control}
+\label{alg:off policy monte carlo control}
+\end{algorithm}
+
+It's important to note that algorithm~\ref{alg:off policy monte carlo control} only can learn from the tail of the trajectories. This can make the algorithm rather slow, if this is a problem, this can be addressed by using temporal difference learning.
+
+\subsection{Discount-aware Importance Sampling}
+
+Importance sampling calculates $\rho$ using all the factors, even if $\gamma$ is close to zero, when the returns don't really matter after a few timesteps. They do however still influence the importance factor, and so still increase the variance. Discount away importance keeps this in mind.
+
+The return value can be written as a sum of flat partial returns(equation~\ref{eq:flat partial returns}) as demonstrated by equation~\ref{eq:return G_t as sum of partial returns}.
+
+\begin{equation}
+\begin{split}
+& \bar{G}_{t:h} = R_{t+1} + R_{t+2} + ... + R_h   \\ 
+& 0 \leq t \le h \leq T
+\end{split}
+\label{eq:flat partial returns}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\bar{G}_{t:h} & = R_{t+1} + \gamma R_{t+2} ... \gamma^{T-t-1}R_h \\
+& = (1-\gamma)R_{t+1} \\
+& + (1-\gamma)\gamma (R_{t+1} + R_{t+2}) \\
+& + (1-\gamma)\gamma^2(R_{t+1} + R_{t+2} + R_{t+3}) \\
+& ... \\
+& \gamma^{T-t-1}(R_{t+1} + R_{t+2} + ... + R_{T}) \\
+& = (1-\gamma)\sum_{h=t+1}^{T-1}\gamma^{h-t-1}\bar{G}_{t:h} + \gamma^{T-t-1}\bar{G}_{t:T}
+\end{split}
+\label{eq:return G_t as sum of partial returns}
+\end{equation}
+
+Using equation~\ref{eq:return G_t as sum of partial returns} we can define ordinary and weighted importance sampling:
+
+\begin{equation}
+V_{\text{ordinary}}(S) = \frac{\sum_{t\in\tau(s)}(1-\gamma)\sum_{h=t+1}^{T-1}\gamma^{h-t-1}\bar{G}_{t:h}\rho_{t:h-1} + \gamma^{T-t-1}\bar{G}_{t:T}\rho_{t:T(t)}}{|\tau(S)|}
+\label{eq:discount-away ordinary importance sampling}
+\end{equation}
+
+\begin{equation}
+V_{\text{ordinary}}(S) = \frac{\sum_{t\in\tau(s)}(1-\gamma)\sum_{h=t+1}^{T-1}\gamma^{h-t-1}\bar{G}_{t:h}\rho_{t:h-1} + \gamma^{T-t-1}\bar{G}_{t:T}\rho_{t:T(t)}}{\sum_{t\in\tau(s)}(1-\gamma)\sum_{h=t+1}^{T-1}\gamma^{h-t-1}\bar{G}_{t:h} + \gamma^{T-t-1}\bar{G}_{t:T}}
+\label{eq:discount-aware weighted importance sampling}
+\end{equation}
+
+\subsection{Per Decision Importance Sampling}
+
+The off-policy estimator can be written as a sum of rewards as demonstrated in equation~\ref{eq:off policy estimator as sum of rewards}. Each of the terms has a reward \textbf{and the same importance sampling term}. This term can be written out as demonstrated by equation~\ref{eq:importance sampling ratio in subterms}. The \textbf{terms can be averaged out} (equation~\ref{eq:average out importance sampling factor}) to 1. Bringing the average of the sampling-ratio term's of equation~\ref{eq:off policy estimator as sum of rewards} to a different value as demonstrated by equation~\ref{eq:reduced sampling ratio term}. Finally the \textbf{per decision importance sampling value function} then becomes equation~\ref{eq:per-decision importance sampling value function}.
+
+\begin{equation}
+\begin{split}
+\rho_{t:T-1}G_t & = \rho_{t:T-1} (R_{t+1} + \gamma R_{t+2} + ... + \gamma^{T-t-1}R_T) \\
+& = \rho_{t:T-1}R_{t+1}  + \gamma \rho_{t:T-1} R_{t+2} + ... +  \gamma^{T-t-1}\rho_{t:T-1}R_T
+\end{split}
+\label{eq:off policy estimator as sum of rewards}
+\end{equation}
+
+\begin{equation}
+\rho_{t:T-1}R_{t+1} = 
+\frac	
+	{\pi(A_t|S_t)\pi(A_{t+1}|S_{t+1})\pi(A_{t+2}|S_{t+2})}
+	{b(A_t|S_t)b(A_{t+1}|S_{t+1})b(A_{t+2}|S_{t+2})}
+...
+\frac{\pi(A_{T-1}|S_{T-1})}{b(A_{T-1}|S_{T-1})} R_{t+1}
+\label{eq:importance sampling ratio in subterms}
+\end{equation}
+
+\begin{equation}
+\EX \left[\frac{\pi(A_k|S_k)}{b(A_k|S_k))}\right] = \sum_a b(a|S_k)\frac{\pi(a|S_k)}{b(a|S_k)} = \sum_a \pi(a|S_k) = 1
+\label{eq:average out importance sampling factor}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+& \EX[\rho_{t:T-1}R_{t+1}] = \EX[\rho_{t:t}R_{t+1}] \\
+& \EX[\rho_{t:T-1}R_{t+k}] = \EX[\rho_{t:t+k-1}R_{t+k}] \\
+\end{split}
+\label{eq:reduced sampling ratio term}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+& \EX[\rho_{t:T-1}G_t] = \EX[\widetilde{G_t}] \\
+& \widetilde{G_t} = \rho_{t:t}R_{t+1} + \gamma \rho_{t:t+1}R_{t+2} + \gamma^2 \rho_{t:t+2}R_{t+3} + ... \\
+& + \gamma^{T-t-1}\rho_{t:T-1}R_T \\
+& V(S) = \frac{\sum_{t\in\tau(s)}\widetilde{G_t}}{|\tau(s)|}\\
+\label{eq:per-decision importance sampling value function}
+\end{split}
+\end{equation}
+
+
+
+
 \section{Exercises}
 
 \subsection{Exercise 5.1 page 94}
