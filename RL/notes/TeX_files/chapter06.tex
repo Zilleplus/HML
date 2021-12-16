@@ -6,7 +6,7 @@
 
 The basic formula for monte carlo prediction is $V(S_t)=V(S_t)+\alpha [G_t - V(S_t)]$. $G_t$ is the final result, this means that the update only can happen at the end of the simulation. By replacing $G_t$ with $R_{t+1} V(S_{t+1})$ we get the TD method $V(S_t) := V(S_t)+\alpha [R_{t+1} + \gamma V(S_{t+1}) - V(S_t)]$.
 
-The update of the TD method is called the \textbf{TD error} $\delta = G_t - R_{t+1} V(S_{t+1})$. An equivalent entity exists with monte carlo methods, and is called the monte-carlo error. The monte carlo error can be written as a sum of TD errors, illustrated by equation \ref{eq:monte carlo error is a sum of td errors}. (proof on page 121)
+The update of the TD method is called the \textbf{TD error} $\delta = G_t - R_{t+1} V(S_{t+1})$. An equivalent entity exists with Monte-Carlo methods, and is called the Monte-Carlo error. The monte carlo error can be written as a sum of TD errors, illustrated by equation \ref{eq:monte carlo error is a sum of td errors}. (proof on page 121)
 
 \begin{equation}
 G_t - V(S_t) = \sum_{k=t}^{T-1} \gamma^{k-t} \delta_k

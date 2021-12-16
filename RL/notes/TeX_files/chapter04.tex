@@ -1,4 +1,88 @@
 \chapter{Dynamic Programming}
+\section{Summary}
+Dynamic programming is a \textbf{collection of algorithms} that can be used to find the \textbf{optimal policy}. It assumes a perfect model of the system (MDP) and uses a lot of computational power. 
 
-\section{Exercise 4.8}
+\begin{equation}
+v_*(s) = \max_a \sum_{s',r} p(s', r | s, a)[r + \gamma v_*(s')]
+\label{eq:bellman optimality equation state-value function}
+\end{equation}
+
+\begin{equation}
+q_*(s, a) = \sum_{s', r} p(s', r | s, a) [r + \gamma \max_{a'} q_*(s', a')]
+\label{eq:bellman optimality equation action-value function}
+\end{equation}
+
+\subsection{Policy evaluation}
+The bellman equation from \ref{eq:bellman equation value function derivation} can be converted into an iterative method called \textbf{iterative policy evaluation} to find the value function. It takes the expected value over all the same next states. All updates in dynamic programming are called \textbf{expected updates}, because they are based on expectation over all possible next states rather then the sample next states.
+
+\begin{equation}
+\begin{split}
+v(s)_{k+1} 
+& = \EX_\pi\left[ R_{t+!} + \gamma v_k(S_{k+1}) | S_t = s \right] \\
+& = \sum_a \pi(a | s) \sum_{s', r} p(s', r | s, a) \left[r + \gamma v(s')\right] \\
+\end{split}
+\label{eq:iterative policy evaluation update rule}
+\end{equation}
+
+\subsection{Policy improvement}
+\begin{equation}
+\begin{split}
+q_\pi(a, s) & = \EX\left[R_{t+1} + \gamma v_\pi(S_{t+1}) | S_t = s, A_t = a \right]\\
+& = \sum_{s', r} p(s', r | s, a)\big[r + \gamma v_\pi(s')\big]
+\end{split}
+\label{eq:policy improvement, select the next action}
+\end{equation}
+
+Given a policy $\pi$ and value function $v_\pi(s)$, one action $a$ can be selected that maximizes equation~\ref{eq:policy improvement, select the next action} and all sequential actions follow the policy $\pi$. The \textbf{policy improvement theorem}  say's that if a new policy $\pi'$ satisfies equation~\ref{eq:policy improvement theorem condition}, the the new policy will satisfy equation~\ref{eq:policy improvement theorem result}. And be as good or better then the original policy.(proof on page 78-79 of the book)
+
+\begin{equation}
+q_\pi(s, \pi'(s)) \geq v_\pi(s)
+\label{eq:policy improvement theorem condition}
+\end{equation}
+
+\begin{equation}
+v_{\pi}(s) \leq v_{\pi'}(s)
+\label{eq:policy improvement theorem result}
+\end{equation}
+
+The new improved policy $\pi'$ is formally written down in equation~\ref{eq:greedy policy action-value}. The corresponding value function is formally written down in equation~\ref{eq:greedy policy value function to bellman equation}. Where we \textbf{end up with the bellman optimality equation}. Indicating that the policy can improve until it's the optimal policy.
+
+\begin{equation}
+\begin{split}
+\pi'(s) & = \argmax_a q_\pi (s, a) \\
+& = \argmax_a \EX\left[ R_{t+1} + \gamma v_\pi(S_{t+1} | S_t = s, A_t = a) \right] \\
+& = \argmax_a \sum_{s',r} p(s', r|s, a)\left[r + \gamma v_{\pi}(s')\right]
+\end{split}
+\label{eq:greedy policy action-value}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+v_{\pi'}(s) 
+& = \max_a \EX\left[ R_{t+1} + \gamma v_\pi'(S_{t+1}) | S_t = s, A_t=a \right] \\
+& = \max_a \sum_{s', r}p(s', r|s, a)\left[r + \gamma v_{\pi'}(s')\right]
+\end{split}
+\label{eq:greedy policy value function to bellman equation}
+\end{equation}
+
+\subsection{Policy iteration}
+
+The iterative process of evaluating a policy, and then creating a new policy that is greedy towards the old one is called \textbf{policy iteration}.
+
+\subsection{Value iteration}
+
+Instead of evaluating the complete policy first, and then improving the policy. The policy can be improved after every state evaluation. Effective \textbf{turning the bellman optimality equation into the iterative update} of equation~\ref{eq:value iteration}.
+
+\begin{equation}
+v_{k+1} = \max_a = \sum_{s',r} p(s', r| s, a)\big[ r + \gamma v_k(s')\big]
+\label{eq:value iteration}
+\end{equation}
+
+\subsection{Generalized policy iteration}
+The iterative process of repeatedly evaluating a policy and using it to create an improved version of that policy, is referred to as \textbf{generalized policy iteration} or short GPI. Both policy iteration and value iteration are GPI, as do many stochastic methods.
+
+
+\section{Exercises}
+
+\subsection{Exercise 4.8}
 The reward is only obtained when the capital is above 99. When the capital is at 50, there is a 50\% chance you can win the game. So this obviously is the optimal policy. When you reach 51: it would be rather odd to bet the entire capital, as you don't need to risk it all to reach 100. Bigger downside, but same upside. So the best course of action is to bet with 1, see if you can grow this above 50. If you lose it, you still have a 50\% chance to win by betting it all.
