@@ -1,0 +1,309 @@
+\chapter{On-Policy Prediction with Approximation}
+
+\section{Summary}
+
+\subsection{Function approximation}
+In the previous chapters tables were used to represent the value function. This means that every state is updated separately. If the number of states goes up, this becomes infeasible. The state function can be approximated by $\hat{v}(s, w)$, with $w \in \Re^d$, the dimension of w is much smaller then the number of states $d << |s|$. $\hat{v}$ generalizes the update of one state over many.
+
+\subsection{The prediction objective $\overline{VE}$}
+
+\begin{itemize}
+	\item $\mu(s)$: state distribution/on-policy distribution, indicates how important a certain state is.
+	\item $h(s)$: probability that the episode began in state $s$
+	\item $\eta(s)$: number of timesteps spend on average in state $s$
+\end{itemize}
+
+The value function updates don't update the state estimation directly but have to adjust the weights of a function. A common metric used is the \textbf{mean squared value error} illustrated in equation~\ref{eq:mean squared value error}.
+
+\begin{equation}
+\overline{VE}(w) = \sum_{s \in S} \mu(s)\big[v_{\pi}(s) - \hat{v}(s, w) \big]^2
+\label{eq:mean squared value error}
+\end{equation}
+
+When training a episodic task on-policy $\mu$ can be derived from $\eta$ using equation~\ref{eq:on-policy average time spend in state system of equations}. Solving the sytem of equations results in $\eta$, which can be used to find $\mu(s)$ $\mu = \frac{\mu(s)}{\sum_{s'}\mu(s')}$.
+
+\begin{equation}
+\eta(s) = h(s) + \sum_{\bar{s}} \eta(\bar{s}) \sum_a \pi(a | \bar{s})p(s | \bar{s}, a)
+\label{eq:on-policy average time spend in state system of equations}
+\end{equation}
+
+The value function $\overline{VE}$ might not always be the the best option, but it's a common used one. The updates of the approximation sometime lead to a local optimum, and not to a global one.
+
+\section{Stochastic gradient and semi-gradient methods}
+
+\begin{itemize}
+	\item $w = (w_1, w_2, ... w_d)^T$: weights
+	\item $\hat{v}(s, w)$: approximation function
+	\item $w_t$: update of $w$ at timestep $t$
+\end{itemize}
+
+Often there will be no $w$ that gets all the states right. So the $w$ with the lowest error is picked by stochastic gradient descent (SGD). If the actual value function is present the update of the approximation is equation~\ref{eq:gradient descent update rule}. However $v_{\pi}$ is not known in practice, so take $v_{\pi} \approx U_t$ and the update rule then becomes equation~\ref{eq:stochastic gradient descent update rule}.
+
+\begin{equation}
+\begin{split}
+w_{t+1} & = w_t - \frac{1}{2} \alpha \nabla \big[ v_{\pi}(S_t) - \hat{v}(S_t, w_t) \big]^2 \\
+& = w_t + \alpha \big[ v_{\pi}(S_t) - \hat{v}(S_t, w_t) \big] \hat{\nabla}(S_t, w_t)
+\end{split}
+\label{eq:gradient descent update rule}
+\end{equation}
+
+\begin{equation}
+w_{t+1} = w_t + \alpha \big[ U_t - \hat{v}(S_t, w_t) \big] \hat{\nabla}(S_t, w_t)
+\label{eq:stochastic gradient descent update rule}
+\end{equation}
+
+\textbf{Monte carlo methods} approximate $U_t=G_t$, the update rule then becomes equation~\ref{eq:stochastic gradient descent monte carlo update rule}. We know that $G_t$ is an unbiased estimate of $v_{\pi}$.($\EX[U_t | S_t = s]=v_{\pi}(s)$). With \textbf{bootstrapping methods}(equation~\ref{eq:bootstrapping Ut approximation}) this is not the case anymore, as $U_t$ relies on the weights $w_t$ it has a bias. They can however converge much quicker, but are as robust. We call these \textbf{semi-gradient methods}. 
+
+\begin{equation}
+w_{t+1} = w_t + \alpha \big[ U_t - \hat{v}(S_t, w_t) \big] \hat{\nabla}(S_t, w_t)
+\label{eq:stochastic gradient descent monte carlo update rule}
+\end{equation}
+
+\begin{equation}
+U_t = \sum_{a,s',r} \pi(a|S_t)p(s', r| S_t, a)[r+ \gamma\hat{v}(s', w)]
+\label{eq:bootstrapping Ut approximation}
+\end{equation}
+
+So the TD(0) algorithm with approximation is a \textbf{semi-gradient method}, the update is illustrated in equation~\ref{eq:TD(0) stochastic gradient update rule}.
+
+\begin{equation}
+w_{t+1} = w_t + \alpha \big[ R_{t+1} - \gamma \hat{v}(S_t, w_t) \big] \hat{\nabla}(S_t, w_t)
+\label{eq:TD(0) stochastic gradient update rule}
+\end{equation}
+
+\textbf{State aggregation} is a simplified version of general function approximation. The states are grouped, and one component of $w$ represents the whole group.
+
+\subsection{Linear methods}
+\begin{itemize}
+	\item $x(s)$: feature vector, representing basis functions
+	\item $x_i \in S$: all features are just states
+	\item $\hat{v}(s, w) = w^Tx(s) = \sum_{i=1}^{d}w_ix_i$: linear value function
+	\item $\nabla \hat{v}(s, w) = x(s)$: gradient value function
+\end{itemize}
+
+Monte carlo with linear approximation has the update rule of equation~\ref{eq:monte carlo update gradient descent linear approximation}. It converges robustly to the global optimum.
+
+\begin{equation}
+w_{t+1} = w_t + \alpha \big[ G_t - \hat{v}(S_t, w_t) \big]x(s_t)
+\label{eq:monte carlo update gradient descent linear approximation}
+\end{equation}
+
+TD(0) has the update rule of equation~\ref{eq:TD(0) update semi-gradient descent linear approximation}, which only converges to the local optimum. 
+
+\begin{equation}
+\begin{split}
+w_{t+1} & = w_t + \alpha \big( R_{t+1} + \gamma w_t^Tx_{t+1} - w_t^T x_t\big)x_t\\
+& = w_t + \alpha \big[R_{t+1}x_t - x_t ( x_t - \gamma x_{t+1} )^Tw_t\big]
+\end{split}
+\label{eq:TD(0) update semi-gradient descent linear approximation}
+\end{equation}
+
+The expected TD(0) weight vector is derived from equation~\ref{eq:TD(0) update semi-gradient descent linear approximation} in equation~\ref{eq:TD(0) linear approximation expected weight vector}. The TD(0) steady state vector $w_{TD}$ can be solved from this as a fixed point $w_{TD} = A^{-1}b$.
+
+\begin{equation}
+\begin{split}
+& \EX[w_{t+1}| w_t] = w_t + \alpha (b-Aw_t) \\
+& b = \EX[R_{t+1}x_t] \in \Re^d \\
+& A = \EX[x_t(x_t - \gamma x_{t+1})^T]
+\end{split}
+\label{eq:TD(0) linear approximation expected weight vector}
+\end{equation}
+
+The upper bound error of $\overline{VE}$ when using TD is defined by equation~\ref{eq:upper bound error TD(0) linear approximation}. The Monte Carlo error is $\min_w \overline{VE}$. When $\gamma$ is near zero the error  goes up drastically, but because it's a TD method, it has low variance. 
+
+\begin{equation}
+\overline{VE}(W_{TD}) \leq \frac{1}{1-\gamma}\min_w \overline{VE}(w)
+\label{eq:upper bound error TD(0) linear approximation}
+\end{equation}
+
+\subsection{Feature construction for Linear Methods}
+A big limitation of the linear form is that no interactions between features can be modeled. Such as presence of a feature being good only in the absence of an other feature.
+
+\subsubsection{Polynomials}
+Polynomials are a simple way to model interpolation and regression. The calculation of the weights $w$ is still a linear problem.
+
+\begin{itemize}
+	\item high dimensional feature vector $x(s)= (1, s_1, s_2, s_1s_2, s_1^2,s_2^2,s_1^2s_2,s_1s_2^2,s_1^2,s_2^2)$
+\end{itemize}
+
+\begin{equation}
+\begin{split}
+x_i(s) = \prod_{j=1}^{k}s_j^{c_{i,j}} \\
+c_{i,j} = {0, 1, ..., n} \\
+(n+1)^k \text{ features} \\
+\end{split}
+\label{eq:n ordered polynomial basis feature}
+\end{equation}
+
+\subsubsection{Fourier basis}
+The Fourier series(linear combination) can be a basis for the function approximation. It works good with SARSA on smooth functions, it has some problems with discontinuations.
+
+\begin{equation}
+\begin{split}
+& x_i(s) = cos(\pi s^Tc^i), s \in [0,1] \\
+& c^i = (c_1^i, ... c_k^i)  \\
+& c_j^i \in {0, ..., n} \\
+& (n+1)^k \text{ features}
+\end{split}
+\label{eq:fourier basis}
+\end{equation}
+
+\begin{equation}
+\alpha_i = \frac{\alpha}{\sqrt{(c_1^i)^2 + ... + (c_k^i)^2}}
+\label{eq:step size TD with fourier approximation}
+\end{equation}
+
+\subsubsection{Coarse Coding}
+The state space is covered by overlapping shapes(typically circles). A state is a point on in the state space. All the shapes that have this point inside their borders become 1, the other zero. The shape/width of the shapes determines the generalization. Small shapes give very little generalization, while big ones will give a lot of generalization.
+
+\subsubsection{Tile coding}
+Similar to coarse coding, but the shapes (such as rectangle) do not overlap. Only points in the same tile are generalized with each other. In order to get the same kind of generalization as in coarse coding, several layers of tiles can be made. This results in faster then coarse coding, but equally good results. The step size is more intuitive $\alpha = \frac{1}{n}$ would move 1 tile per iteration. Or if there are multiple layers $\alpha = \frac{w}{n}$, with w the offset between the layers.
+
+\subsubsection{Radial basis functions}
+The Radian basis functions (RBF) are the natural generalization of coarse coding to continuous valued features. It can be anything in $[0,1]$, while the coarse coding is a Boolean.
+
+\begin{itemize}
+	\item $c_i$: position of the RBF curve
+	\item $\sigma$: width of the RBF curve
+\end{itemize}
+
+\begin{equation}
+x_i(s) = \exp \left( \frac{|| s - c_i ||^2}{2 \sigma_i^2} \right)
+\end{equation}
+
+\subsection{Selecting step-size parameters manually}
+
+The classical choice for step size is $\alpha = \frac{1}{t}$, this works great with MC methods, but not with TD methods.
+
+In the tabular case, $\alpha=1$ would eliminate the error after just one step. $\alpha=\frac{1}{\tau}$ eliminates the error after $\tau$ steps. This rule can be generalized to the linear approximation $\alpha = \EX[x^Tx]]$, with $x$ a random feature vector. This does assume that the size of $x^Tx$ is about constant.
+
+\subsection{Nonlinear function approximation: Artificial Neural network}
+
+The text in the book is rather vague, the only relevant take away is that TD-error's are used as well to update the value function if you use ANN.
+
+\subsection{Least-Squared TD}
+Earlier on in the chapter we used Least-Squares to do linear approximation. We ended up a fixed point $W_{TD}=A^{-1}b$ where $A=\EX[x_t(x_t - \gamma x_{t+1})^T]$ and $b=\EX[R_{t+1}x_t]$. Instead of interating over the fixed point, $W_{TD}$ can be found in 1 go.  This is illustrated in equation~\ref{eq:TDLS update equation}, a more detailed algorithm can be found on page 230 of the book.
+
+\begin{equation}
+\begin{split}
+\hat{A}_t & = \sum_{k=0}^{t-1}x_k(x_k - \gamma x_{k+1})^T + \epsilon I \\
+w_t & = \hat{A}_t^{-1}b_t
+\end{split}
+\label{eq:TDLS update equation}
+\end{equation}
+
+If all the samples are used in the update, we don't get the forgetting behavior of old samples, as we had before. This can cause some issues if the target policy $\pi$ is updated. There are some extra steps required to add forgetting in the algorithm. There is however no need to pick a step size, but you do have to pick the size of $\epsilon$, so this is not really a win.
+
+\subsection{Memory-based function approximation}
+
+Instead of using the training examples to find the proper value of function parameters. The training data itself can be saved, and when the approximation is called upon with a certain state. It could return the answer of \textbf{the nearest neighbor}. Alternatively \textbf{the weighted average} of a set of neighbors could be returned, or a surface could be fit on the neighbors. The value can then be approximated using this surface, this is called \textbf{locally weighted regression}.
+
+The 2 major advantages of this kind of approximation are:
+\begin{enumerate}
+	\item No parameters.
+	\item The effect on the value function of adding a sample to the set is immediate.
+\end{enumerate}
+Memory-based functions can however become slow in execution as the number of samples grows. This can be mitigated by using \textbf{k-d trees}, to speedup the look ups.
+
+\subsection{Kernel-based function approximation}
+Any linear parametric regression method that uses feature vectors can be recasted as kernel regression with $k(s',s)=x(s)^Tx(s)$. (the kernel trick)
+\begin{itemize}
+	\item $g(s)$: Target for the state s.
+	\item $D$: Set of stored samples.
+\end{itemize}
+
+\begin{equation}
+\hat{V}(s, D) = \sum_{s' \in D} k(s, s')g(s')
+\end{equation}
+
+The text on page 232-233 is very vague on this method, might require some further investigation.
+
+\subsection{Looking deeper at on-policy learning: Interest and Emphasis}
+Not all states are as relevant to the RL problem. For example states that only occur after a series of very poor choices don't need to have an as accurately value function as those frequently visited by the greedy policy.
+
+\begin{itemize}
+	\item $I_t$: interest, the degree to which we are interested in accurately valuing the state. An interest of $0$ means there is no interest, and a value of $1$ means it's of maximum interest
+	\item $M_t$: emphasis, is multiplied with the learning rate
+	\item $M_t = I_t + \gamma^nM_{t-n}$
+\end{itemize}
+
+\begin{equation}
+w_{t+n} = w_{t+n-1} + \alpha M_t\big[ G_{t:n+n} - \hat{v}(s_t, w_{t+n-1}) \big] \nabla \hat{v}(s_t, w_{t+n-1})
+\end{equation}
+
+\section{Exercises}
+\subsection{Exercise 9.1 page 209}
+\textbf{Show that tabular methods such as presented in Part I of the book are a special case of linear function approximations. What would the feature vectors be?}
+
+The weights $w$ would be the value that used to be in the table. The feature vectors x(s) would be a vector that is 1 on the state that is active so, if $S_t=3$ then $x(3) = (0, 0, 0, 1 , 0 , 0)^T$.(one hot encoding)) This means that the value function is the weight on the index of that state $\hat{v}(s=3, w)=w^Tx(3)=w[3]$.
+
+\subsection{Exercise 9.2 page 211}
+\textbf{Why does (9.17 in the book) define $(n+1)^k$ distinct features for dimension k?}
+The highest degree of polynomial is $n$, so there are $n+1$ terms in a polygon that can be turned on or off. There are $k$ dimensions, so to the power of $k$.
+
+\subsection{Exercise 9.3 page 211}
+\textbf{What n and $c_{i,j}$ produce the feature vectors $x(s)=(1, s_1, s_2, s_1s_2, s_1^2,s_2^2,s_1^2s_2,s_1s_2^2,s_1^2,s_2^2)$?}
+
+$1, s_1, s_2, s_1s_2, s_1^2,s_2^2,s_1^2s_2,s_1s_2^2,s_1^2,s_2^2$ has basis functions of a degree at most 2, and a dimension of 2 $(k=2)$. A max degree of 2 leads to $n=2$.
+
+\begin{itemize}
+	\item $c_{i,j}$: weight vector
+	\item $i$: feature base index
+	\item $j$: power of polynomial term
+\end{itemize}
+
+The basis functions exists at most out of 2 terms, one of each base index. The table below show the powers used on the terms to construct the base function.
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+i & basis function & $c_{i,0}$ & $c_{i,1}$ \\
+\hline
+0 & $1$ & 0 & 1 \\
+1 & $s_1$ & 1 & 0 \\
+2 & $s_2$ & 0 & 1 \\
+3 & $s_1s_2$ & 1 & 1 \\
+4 & $s_1^2s_2$ & 2 & 1 \\
+5 & $s_1s_2^2$ & 1 & 2 \\
+6 & $s_1^2s_2^2$ & 2 & 2 \\
+\end{tabular}
+\end{center}
+
+\subsection{Exercise 9.4 page 221}
+\textbf{Suppose we believe that one of two state dimensions is more likely to have an effect on the value function than is the other, that generalization should be primarily across the dimension rather then along it. What kind of tilings could be used to take advantage of this prior knowledge}
+
+This is mentioned on page 220, a form of tiling that is more elongated along the less relevant dimension could work very well.
+
+\subsection{Exercise 9.5 page 223}
+
+\begin{itemize}
+	\item 7 dimensions
+	\item 8 strip tiling's
+	\item 7*8 = 56 dimension independent tiling's
+	\item $\binom{7}{2}$=21 pairs of 2 dimensional 
+	\item total tiling's = 21*2 + 56 = 98
+\end{itemize}
+
+For any x, it will belong to exactly 8 strip tilings. And it will belong to 6 pairwise interactions so 12 tilings. To represent this you need at 20 non-zero entries equal to 1, therefore $\EX[x^Tx] = 20$. This leads to $\alpha = (\tau\EX[x^Tx])^{-1}=20^{-1}$
+
+\subsection{Exercise 9.6 page 223}
+\textbf{If $\tau=1$ prove that (9.19) together with (9.7) results in the error being reduced to zero in one update}
+
+\begin{itemize}
+	\item equation 9.19 from book page 223: $\alpha = (\tau \EX[x^Tx])^{-1}$
+	\item equation 9.7 from book page 202: $w_{t+1} = w_t + \alpha \big[ U_t - \hat{v}(S_t, w_t)\big]\nabla \hat{v}(S_t, w_t)$
+\end{itemize}
+
+I am not sure how to continue here, it seems $\bar{x}$ must be $1$, for this to work out.
+
+\begin{equation}
+\begin{split}
+w_{t+1} & = w_t + \alpha \big[ U_t - \hat{v}(S_t, w_t)\big]\nabla \hat{v}(S_t, w_t) \\
+& = w_t +  \EX[x^Tx]^{-1}  e x \\
+& = w_t +  (x^Tx)^{-1} ex \\
+& = w_t +  e\bar{x} \\
+e & =  U_t - \hat{v}(S_t, w_t) \\
+e & = w_{t+1} - w_{t} \\
+\bar{x} & = \frac{x}{x^Tx} \\
+\nabla \hat{v}(S_t, w_t) & = x
+\end{split}
+\end{equation}
