@@ -1,0 +1,299 @@
+\chapter{On-policy control with approximation}
+
+\section{Summary}
+
+\subsection{Episodic Semi-gradient control}
+
+The general formulation of episodic semi-gradient control equation~\ref{eq:general formula on-policy control with approximation} can be combined with one-step SARSA leading to equation~\ref{eq:episodic semi-gradient one step sarsa}. The algorithm itself will still need to use a $\epsilon$ greedy policy to allow exploration.
+
+\begin{equation}
+	w_{t+1} = w_t + \alpha \big[ U_t - \hat{q}(S_t, A_t, W_t) \big] 
+\label{eq:general formula on-policy control with approximation}
+\end{equation}
+
+\begin{equation}
+w_{t+1} = w_t + \alpha \big[R_{t+1} + \gamma\hat{q}(S_{t+1}, A_{t+1},W_t) - \hat{q}(S_t, A_t, W_t) \big] \nabla \hat{q}(S_t, A_t, W_t)
+\label{eq:episodic semi-gradient one step sarsa}
+\end{equation}
+
+\subsection{Semi-gradient n-step sarsa}
+The n-step SARSA leads to update of equation~\ref{eq:emi-gradient n-step sarsa update}.
+
+\begin{equation}
+\begin{split}
+G_{t:t+n} & = R_{t+1} + \gamma R_{t+2} + ... + \gamma^{n-1} R_{t+n} \\
+w_{t+1} & = w_t + \alpha \big[G_{t:t+n} + \gamma \hat{q}(s_{t}, A_{t}, W_{t+n-1}) \big] \nabla \hat{q}(S_{t}, A_{t}, W_{t+n-1})
+\end{split}
+\label{eq:semi-gradient n-step sarsa update}
+\end{equation}
+
+\subsection{Average Reward: A new problem setting for continuing tasks}
+The previous definitions of reward work great with episodic tasks, but turns out to be problematic with continuous tasks. Equation~\ref{eq:average reward definition}
+introduces the \textbf{reward rate}, which represents the average amount you will have in a certain state. 
+
+\begin{equation}
+\begin{split}
+r(\pi) & = \lim\limits_{h \rightarrow \infty} \frac{1}{h}\sum_{t=1}^{h} \EX[R_t | S_0, A_{0:t-1} \sim \pi] \\
+& = \lim_{t \rightarrow \infty} \EX[R_t | S_0, A_{0:t-1} \sim \pi] \\
+& = \sum_s \mu_{\pi}(s)\sum_a \pi(a|s) \sum_{s', r}p(s', r| s, a)
+\end{split}
+\label{eq:average reward definition}
+\end{equation}
+
+The steady state distribution $\mu_{\pi}$, is a special case for which equation~\ref{eq:the steady state distribution} holds. The MDP must be \textbf{ergodic}, eg. the starting state and any early decisions made only have a short term effect. Otherwise the limit of equation~\ref{eq:average reward definition} is not guaranteed to exist. The policies that have a maximum $r(\pi)$ value are called the optimal policies.
+
+\begin{equation}
+\sum_s \mu_{\pi}(s)\sum_a \pi(a|s) \sum_{s', r}p(s', r| s, a)=\mu(s')
+\label{eq:the steady state distribution}
+\end{equation}
+
+\begin{equation}
+\mu(s) = \lim_{t \rightarrow \infty} \Pr\{S_t = s | A_{0:t-1} \sim \pi\} 
+\end{equation}
+
+\begin{equation}
+G_t = R_{t+1} - r(\pi) + R_{t+2} - r(\pi) + R_{t+3} - r(\pi) + ...
+\label{eq:differential return}
+\end{equation}
+
+The differential return can be used to setup the values functions (equation~\ref{eq:difference value function update}). 
+
+\begin{equation}
+\begin{split}
+v_{\pi}(s) & = \sum_a \pi(a|s) \sum_{s',r}p(s',r|s, a)\big[ r - r(\pi) + v_{\pi}(s') \big] \\
+q_{\pi}(s, a) & = \sum_{r, s'} p(s', r | s, a)\Big[ r - r(\pi) + \sum_{a'}\pi(a' | s')q_{\pi}(s', a') \Big] \\
+v_*(s) & = \max_a \sum_{r, s'} p(s', r | s, a)\Big[ r - \max_{\pi}r(\pi) + v_*(s') \Big] \\
+q_*(s, a) & = \sum_{r, s'} p(s', r | s, a)\Big[ r - \max_{\pi}r(\pi) + \max_{a'}q_{\pi}(s', a') \Big] \\
+\end{split}
+\label{eq:differential value functions}
+\end{equation}
+
+The TD errors then become equation~\ref{eq:TD errors differential form}. The weight update of semi-gradient SARA then becomes equation~\ref{eq:semi-gradient Sarsa differential form update rule}.
+
+\begin{equation}
+\begin{split}
+\delta_t & = R_{t+1} - \bar{R_t} + \hat{v}(S_{t+1}, w_t) - \hat{v(S_t, w_t)} \\
+\delta_t & = R_{t+1} - \bar{R_t} + \hat{q}(S_{t+1}, A_{t+1}, w_t) - \hat{q}(S_t, A_t, w_t) \\
+\end{split}
+\label{eq:TD errors differential form}
+\end{equation}
+
+\begin{equation}
+w_{t+1} = w_t + \alpha \delta_t \nabla \hat{q}(S_t, A_t, w_t)
+\label{eq:semi-gradient Sarsa differential form update rule}
+\end{equation}
+
+\subsection{Deprecating the discount setting} 
+
+The discount problem works really well in the tabular case, as states are easy to identify. With an approximated value function, it might be that we \textbf{don't know the explicit state}. We only have actions and rewards, in that case \textbf{the discounted return is a scaled version of the undiscounted}.
+
+If we have a continuous process that gives a reward after every output, the \textbf{discounted} reward we would have the weights $1 + \gamma + \gamma^2 + \gamma^3 + ... = \frac{1}{1-\gamma}$. As we only have 1 explicit state. The total reward then becomes $\frac{r(\tau)}{1-\gamma}$, witch is a scaled version of the \textbf{undiscounted} $r(\tau)$. 
+
+A more formal proof can be found on page 254. The root cause of the difficulties with the discounted control setting is that with function approximation we have lost the policy improvement. This is further discussed in the chapter on \textbf{policy gradient descent}.
+
+\subsection{Differential Semi-Gradient n-step SARSA}
+The n-step differential TD error is defined in equation~\ref{eq:n-step differential TD-error}, algorithm~\ref{alg:differential semi-gradient n-step sarsa} illustrates the differential semi-gradient n-step Sarsa.
+
+\begin{equation}
+\begin{split}
+G_{t:t+n} & = R_{t+1} - \bar{R}_{t+n-1} + ... + R_{t+n} + \bar{R}_{t+n-1} + \hat{q}(S_{t+n}, A_{t+n}, W_{t+n-1}) \\
+\delta_t & = G_{t:t+n} - \hat{q}(S_t, A_t, W)
+\end{split}
+\label{eq:n-step differential TD-error}
+\end{equation}
+
+\begin{algorithm}
+\begin{algorithmic}
+	\State $W, S_0 \gets \text{Init}$
+	\State $\pi(s)=\epsilon - \text{greedy}$
+	\Loop \space \textbf{for each step t in the episode}
+	\State $A_t = \pi(S_t)$
+	\State $S_{t+1}, R_t = system(S_t, A_t)$
+	\State $\tau = t -n + 1$ ($\tau$ is the time whose estimate is being updated)
+	\If {$\tau \ge 0$}
+		\State $\delta \gets \sum_{i=\tau+1}^{\tau + n} (R_i - \bar{R}) + \hat{q}(S_{\tau + n}, A_{r+n}, W) - \hat{q}(S_{\tau}, A_{\tau}, W)$
+		\State $\bar{R} \gets \bar{R} + \beta \delta$
+		\State $w \gets \alpha \delta \nabla \hat{q}(S_{\tau}, A_{\tau}, w)$
+	\EndIf
+	\EndLoop
+\end{algorithmic}
+\label{alg:differential semi-gradient n-step sarsa}
+\caption{Differential semi-gradient n-step sarsa}\end{algorithm}
+\section{Exercises}
+
+\subsection{Exercise 10.1 page 248}
+\textbf{We have no explicitly considered or given pseudo code for any Monte-Carlo methods in this chapter. what would they be like? Why is it reasonable not to give pseudo code for them? How would they perform on the Mountain Car Task.}
+
+The monte carlo algorithm replaces $U_t$ with the actual return of an episode $G_t$ in equation~\ref{eq:general formula on-policy control with approximation}. This is by far the simplest way, and the algorithm is trivial.
+
+\subsection{Exercise 10.2 page 248}
+\textbf{Give pseudo code for semi-gradient one-step Expected Sarsa for control.}
+\begin{algorithmic}
+\State $W \gets \text{Init}$
+\State $\pi(s)=\epsilon - \text{greedy}$
+\Loop \space \textbf{for each episode}
+	\State $S, A \gets S_{init}, \pi(S_{init})$
+	\Loop \space \textbf{for each step in the episode}
+		\State Take action $A$, observe $R$ and $S'$
+		\State $A_{exp} \gets \EX_{\pi}[A' | S']$
+		\State $W \gets W + \alpha \big[R + \gamma\hat{q}(S', A_{exp}, W) - \hat{q}(S, A, W) \big] \nabla \hat{q}(S, A, W)$		
+		\State $S, A \gets S', \pi(S')$
+	\EndLoop
+\EndLoop
+\label{alg:approximated one step exptected SARSA}
+\end{algorithmic}
+
+\subsection{Exercise 10.3 page 248}
+\textbf{Why do the results show in Figure 10.4 (book page 248) have higher standard errors at large n than at small n?}
+The standard error $SE=\frac{\sigma}{\sqrt{n}}$ increase as $n$ goes up. As the policy considers more actions. The lower graph of figure 10.4 in the book page 248 has smoother lines on the lower n as the variance on Q is lower.
+
+\subsection{Exercise 10.4 page 250}
+\textbf{Give pseudocode for a differential version of semi-gradient Q-learning}
+
+\begin{algorithmic}
+\State $W \gets \text{Init}$
+\State $\pi(s)=\epsilon - \text{greedy}$
+\Loop \space \textbf{for each episode}
+\State $S \gets S_{init}$
+\State $\bar{R} \gets 0$
+\Loop \space \textbf{for each step in the episode}
+\State $A = \pi(S')$
+\State Take action $A$, observe $R$ and $S'$
+\State $\delta = R -\bar{R} + \max_a\hat{q}(S', a, W) - \hat{q}(S, A, W)$
+\State $W \gets W + \alpha \delta \nabla \hat{q}(S, A, W)$
+\State $S \gets S'$
+\State $\bar{R} = \bar{R} + \beta \delta$
+\EndLoop
+
+\EndLoop
+\end{algorithmic}
+
+\subsection{Exercise 10.5 page 250}
+ \textbf{What equations are needed (beyond equation~10.10 from the book page 250) to specify the differential version of TD(0)}
+ 
+ Equation 10.10 from the book $\delta_t = R_{t+1} - \bar{R_t} + \hat{v}(S_{t+1}, w_t) - \hat{v(S_t, w_t)} $, can be combined with the update rule $w_{t+1} = w_t + \alpha \delta_t \nabla \hat{q}(S_t, A_t, w_t)$ to form the full TD(0) algorithm.
+
+\subsection{Exercise 10.6 page 251}
+
+\begin{itemize}
+	\item MDP rewards +1,0,+1,0,... for any policy
+	\item ergodicity is violated these is no stationary distribution $\mu$ 
+	\item Average reward is well defined, what is it? \textbf{0.5 times the number of steps taken, as the average keeps going up}.
+	\item As the average return is not static, the limit of the value function is not well defined. An alternative value function (equation~\ref{eq: ex10.6 alternative value function}) can be used. 
+	\item A, B are both MDP's with +1,0 returns as before. But A starts with 1 while B starts with zero. What are the differential value s of states A and B.
+\end{itemize}
+
+\begin{equation}
+v_{\pi} = \lim_{\gamma \rightarrow 1} \lim_{h \rightarrow \infty} \sum_{t=0}^h \gamma^t \big( \EX[R_{t+1} | S_0=s] - r(\tau) \big)
+\label{eq: ex10.6 alternative value function}
+\end{equation}
+
+If $A = [1, 0, 1, 0, 1, 0 ]$ then $v(A)=(1-0.5)+(0-0.5)*\gamma+(1-0.5)*\gamma^2...$ if $\gamma=1$ then $v=0.5 - 0.5 + 0.5 - 0.5 + 0.5 - 0.5$. This is the geometric series of equation~\ref{eq: ex10.6 alternative value function}, with $a = 0.5$ and $r = -1$. Resulting in $v=\frac{0.5}{1-(-1)}=\frac{1}{4}$
+
+\begin{equation}
+\sum_{k=0}^\infty ar^k = \frac{a}{1-r} 
+\label{eq:ex 10.6 geometric series}
+\end{equation}
+
+If $B = [0, 1, 0, 1, 0, 1, ... ]$ and $\gamma=1$ then $V(B) = (0-0.5) + (1-0.5) + (0-0.5)... = -0.5 + 0.5 -0.5 + 0.5$ notice that $V(A) = -V(B)$. So $V(B) = -\frac{1}{4}$.
+
+\subsection{Exercise 10.7 page 251}
+The average value is $1/3=r(\tau)$.
+
+\begin{figure}
+	\centering
+	\begin{tikzpicture}
+	
+	\node at (2, 0) (a) {A};
+	\node at (4, -3) (b) {B};
+	\node at (0, -3) (c) {C};
+	
+	\draw [->, auto, bend left] (a) to node {+0} (b);
+	\draw [->, auto, bend left] (b) to node {+0} (c);
+	\draw [->, auto, bend left] (c) to node {+1} (a);
+	\end{tikzpicture}
+	\caption{MPD ex 10.7}
+	\label{fig:mdp ex 10.7}
+\end{figure}
+
+$\gamma=1$ We get the following series: $v(A) = -\frac{1}{3} - \frac{1}{3} + \frac{2}{3} + ...$. We could split it up into 3 series, but notice that if we take $-\frac{1}{3} - \frac{1}{3}$ together into $-\frac{2}{3}$. It becomes one geometric series: $-\frac{2}{3} + \frac{2}{3} - ...$, with $a=-\frac{2}{3}$ and $r=\gamma=1$. So $v(A)=-\frac{1}{3}$
+
+
+\begin{equation}
+\begin{split}
+v_{\pi}(B) & = \lim_{\gamma \rightarrow 1} \lim_{h \rightarrow \infty} \sum_{t=0}^h \gamma^t \big( \EX[R_{t+1} | S_0=B] - r(\tau) \big)\\
+& = \lim_{\gamma \rightarrow 1} \lim_{h \rightarrow \infty} -\sum_{t=0}^h \gamma^{3t} \frac{1}{3} + \sum_{t=0}^h \gamma^{3t+1} \frac{2}{3} -\sum_{t=0}^h \gamma^{3t+2} \frac{1}{3} \\
+& = \lim_{\gamma \rightarrow 1} \lim_{h \rightarrow \infty}  \sum_{t=0}^h \gamma^{3t} \Big( -\frac{1}{3} + \frac{2}{3}\gamma - \frac{1}{3}\gamma^2 \Big)\\
+& =  0
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+v_{\pi}(C) & = \lim_{\gamma \rightarrow 1} \lim_{h \rightarrow \infty} \sum_{t=0}^h \gamma^t \big( \EX[R_{t+1} | S_0=C] - r(\tau) \big)\\
+& = \lim_{\gamma \rightarrow 1} \lim_{h \rightarrow \infty}\sum_{t=0}^h \gamma^{3t} \frac{2}{3} - \sum_{t=0}^h \gamma^{3t+1} \frac{1}{3} -\sum_{t=0}^h \gamma^{3t+2} \frac{1}{3} \\
+& = \lim_{\gamma \rightarrow 1} \lim_{h \rightarrow \infty}  \sum_{t=0}^h \gamma^{3t} \Big( -\frac{1}{3} + \frac{2}{3}\gamma - \frac{1}{3}\gamma^2 \Big)\\
+& = \frac{1}{3}
+\end{split}
+\end{equation}
+
+So: $V(A) = -1/3$, $V(B)=0$ and $V(C)=1/3$
+
+\subsection{Exercise 10.8 page 251}
+
+$\bar{R}$ is in steady state and fixed to $\frac{1}{3}$
+
+\begin{table}
+\begin{center}
+	\begin{tabular}{c | c}
+		Transition & $\delta=R_{t+1} - \bar{R}$ \\
+		\hline
+		A, B & $0 -\frac{1}{3}=-\frac{1}{3}$ \\
+		B, C & $0 -\frac{1}{3}=-\frac{1}{3}$ \\
+		C, A & $1 -\frac{1}{3}= \frac{2}{3}$ \\
+	\end{tabular}	
+\end{center}
+\caption{$\delta$ using a simple error}
+\end{table}
+
+Using equation $10.10$ from the book page 250: $\delta = R_{t+1} - \bar{R} + \hat{v}(S_{t+1}, W) - \hat{v}(S_t, W)$.
+
+\begin{table}[H]
+\begin{center}
+	\begin{tabular}{c | c}
+		$X$ & $V(X)$ \\
+		\hline
+		A & $-\frac{1}{3}$ \\
+		B & $0$ \\
+		C & $ \frac{1}{3}$ \\
+	\end{tabular}
+\end{center}
+\label{tab:value function evaluated in previous exercise}	
+\caption{value function calculated in previous exercise}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+	\begin{tabular}{c | c}
+		Transition & $\delta = R_{t+1} - \bar{R} + \hat{v}(S_{t+1}, W) - \hat{v}(S_t, W)$ \\
+		\hline
+		A, B & $0 - \frac{1}{3} + 0 + \frac{1}{3} = 0$ \\
+		B, C & $0 - \frac{1}{3} + \frac{1}{3} - 0 = 0$ \\
+		C, A & $1 - \frac{1}{3} + \frac{1}{3} + \frac{1}{3}=0$ \\
+	\end{tabular}
+	\caption{$\delta$ using the differential value function update}
+\end{center}
+\end{table}
+
+The update using the $\delta$ with the value function has a stable update, as the estimation of the value function is in steady state.
+
+\subsection{Exercise 10.9 page 255}
+Page 35 of the hand describes the \textbf{exponential recency-weighted average without initial bias}, equation~\ref{eq:ex 10.9 Exponential recency-weighted average without initial bias}. Using this $\beta$ instead of the static one will get rid of the bias.
+
+\begin{equation}
+\begin{split}
+\beta & = \frac{\alpha}{\bar{o}_n} \\
+\bar{o}_n & = \bar{o}_{n-1} + \alpha (1-\bar{o}_{n-1})
+\end{split}
+\label{eq:ex 10.9 Exponential recency-weighted average without initial bias}
+\end{equation}
