@@ -17,7 +17,7 @@ w_{t+1} = w_t + \alpha \big[R_{t+1} + \gamma\hat{q}(S_{t+1}, A_{t+1},W_t) - \hat
 \end{equation}
 
 \subsection{Semi-gradient n-step sarsa}
-The n-step SARSA leads to update of equation~\ref{eq:emi-gradient n-step sarsa update}.
+The n-step SARSA leads to update of equation~\ref{eq:semi-gradient n-step sarsa update}.
 
 \begin{equation}
 \begin{split}
@@ -28,7 +28,7 @@ w_{t+1} & = w_t + \alpha \big[G_{t:t+n} + \gamma \hat{q}(s_{t}, A_{t}, W_{t+n-1}
 \end{equation}
 
 \subsection{Average Reward: A new problem setting for continuing tasks}
-The previous definitions of reward work great with episodic tasks, but turns out to be problematic with continuous tasks. Equation~\ref{eq:average reward definition}
+The previous definitions of reward work great with episodic tasks, but turn out to be problematic with continuous tasks. Equation~\ref{eq:average reward definition}
 introduces the \textbf{reward rate}, which represents the average amount you will have in a certain state. 
 
 \begin{equation}
@@ -43,7 +43,7 @@ r(\pi) & = \lim\limits_{h \rightarrow \infty} \frac{1}{h}\sum_{t=1}^{h} \EX[R_t 
 The steady state distribution $\mu_{\pi}$, is a special case for which equation~\ref{eq:the steady state distribution} holds. The MDP must be \textbf{ergodic}, eg. the starting state and any early decisions made only have a short term effect. Otherwise the limit of equation~\ref{eq:average reward definition} is not guaranteed to exist. The policies that have a maximum $r(\pi)$ value are called the optimal policies.
 
 \begin{equation}
-\sum_s \mu_{\pi}(s)\sum_a \pi(a|s) \sum_{s', r}p(s', r| s, a)=\mu(s')
+\sum_s \mu_{\pi}(s)\sum_a \pi(a|s) p(s'| s, a)=\mu(s')
 \label{eq:the steady state distribution}
 \end{equation}
 
