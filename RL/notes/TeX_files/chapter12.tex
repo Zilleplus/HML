@@ -1,0 +1,114 @@
+\chapter{Eligibility Traces}
+
+\section{Summary}
+
+\subsection{General idea of eligibility traces}
+
+\begin{itemize}
+	\item $w_t \in \Re^d$: weights
+	\item $z_t \in \Re^d$: eligibility traces
+	\item $\lambda \in [0,1]$: trace decay 
+	\item When $w_t$ is modified $z_t$ is bumped up and then decayed according to the trace decay.
+\end{itemize}
+
+Eligibility traces can be applied to all the algorithms studied in the previous chapters. It's in many way's similar to the n-step algorithms, but has some advantages:
+\begin{enumerate}
+	\item Computational more efficient then n-step.
+	\item Faster to update, n-step algo's take n steps to apply an update fully. While eligibility traces have an immediate effect.
+	\item Eligibility traces require less memory, as it just requires an array of the same length as the weights. While n-step algo's require you to save the last n feature vectors.
+\end{enumerate}
+
+There are 2 different types of eligibility types:
+\begin{enumerate}
+	\item Forward: uses future values, complex to implement
+	\item Backward: uses past values(TD-error), and is sometimes equal to the foward type.
+\end{enumerate}
+
+\subsection{The $\lambda$ step return}
+The n-step return illustrated in equation~\ref{eq:n-step return repeated in chapter 12} can be averaged together for different step sizes like $G_{\text{avg}} = 0.5G_{t:t+m} + 0.5 G_{t:t+n}$. By combining returns combinations of TD and MC a variety trade-off methods can be constructed. Updates using such combined returns are called \textbf{compound updates}
+\begin{equation}
+G_{t:t+n} = R_{t+1} + \gamma R_{t+2} + ... + \gamma^{n-1}R_{t+n} + \gamma^n \hat{v}(S_{t+1}, w_{t+n-1})
+\label{eq:n-step return repeated in chapter 12}
+\end{equation}
+
+TD($\lambda$) can be understood as one particular way of averaging n-step updates. The one step update is given weight $(1 - \lambda)$, the two step $(1-\lambda)\lambda$, and so on, the full return is defined in equation~\ref{eq:TD(lambda) return} called the lambda-return. 
+\begin{equation}
+G_t^{\lambda} = (1-\lambda)  \sum^{\infty}_{n=1}\lambda^{n-1} + G_{t:t+n}
+\label{eq:TD(lambda) return}
+\end{equation}
+
+After the terminal state has been reached all subsequent n-step returns are equal to the conventional $G_t$. More formally written in equation~\ref{eq:TD(lambda) return}. If $\lambda=1$ we get monte-carlo and with $\lambda=0$ we get pure TD. 
+\begin{equation}
+G_t^{\lambda} = (1-\lambda) \sum^{T-t-1}_{n=1}\lambda^{n-1} + \lambda^{T-t-1} G_t
+\label{eq:TD(lambda) n-step return}
+\end{equation}
+
+The \textbf{off-line $\lambda$-return algorithm} has the update of equation~\ref{eq:off-line lambda-return algorithm update}. It has a very similar performance to the n-step TD methods. This kind of approach is called \textbf{forward view}, where we look at the horizon of future states. 
+\begin{equation}
+w_{t+1} = w_t + \alpha \big[G_t^{\lambda} - \hat{v}(S_t, W_t) \big]\nabla\hat{v}(S_t, W_t)
+\label{eq:off-line lambda-return algorithm update}
+\end{equation}
+
+\subsection{TD($\lambda$)}
+
+\section{Exercises}
+
+\section{ex12.1}
+\textbf{Just as the return can be written recursively in terms of the first reward and itself one-step later (3.9 book), so can the $\lambda$-return. Define the analogous recursive relationship from (12.2 book) and (12.1 book)}
+
+Equation~\ref{eq:equation 3.9 repeated in exercise 12.1} contains the recursive relation of equation3.9 in the book.
+\begin{equation}
+\begin{split}
+G_t & =  R_{t+1} + \gamma R_{t+2} + \gamma^2 T_{t+3} + \gamma^3 R_{t+4} \\
+& = R_{t+1} + \gamma(R_{t+2} + \gamma R_{t+3} + ...) \\
+& = R_{t+2} + \gamma T_{t+1}
+\end{split}
+\label{eq:equation 3.9 repeated in exercise 12.1}
+\end{equation}
+
+Equation 12.1 from the book can be rewritten recursively like:
+\begin{equation}
+\begin{split}
+G_{t:t+n} & = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + ... + \gamma^{n-1}R_{t+n} + \gamma^n \hat{v}(S_{t+n}, w_{t+n-1}) \\
+& = R_{t+1} + \gamma (R_{t+2} + \gamma R_{t+3} + ... + \gamma^{n-2}R_{t+n} + \gamma^{n-1} \hat{v}(S_{t+n}, w_{t+n-1})) \\
+& = R_{t+1} + \gamma G_{t+1:t+n}
+\end{split}
+\end{equation}
+
+Equation 12.2 from the book can be rewritten recursively:
+\begin{equation}
+\begin{split}
+G_t^{\lambda} & = (1-\lambda)\sum_{n=1}^{\infty} \lambda ^{n-1}G_{t:t+n}\\
+& = (1-\lambda)\big[G_{t:t+1} + \sum_{n=2}^{\infty} \lambda^{n-1}G_{t:t+n}\big] \\
+& = (1-\lambda)\big[G_{t:t+1} + \lambda \sum_{n=1}^{\infty} \lambda^{n-1}G_{t:t+n+1}\big] \\
+& = (1-\lambda)  G_{t:t+1} + G_{t:t+1}\lambda G_{t+1}^{\lambda}  \\
+& = (1-\lambda)  R_{t+1} + R_{t+1}\lambda G_{t+1}^{\lambda}  
+\end{split}
+\end{equation}
+
+\section{ex 12.2}
+\textbf{The parameter $\lambda$ characterizes how fast the exponential weighting in Figure 12.2(of the book) falls, and thus how far into the future the $\lambda$-return algorithm looks in determining its update. But a rate factor such as $\lambda$ is sometimes a bit an awkward way of characterizing the speed of the decay. For some purposes it is better to specify a time constant or half-life. What is the equation relating $\lambda$ and the half-life $\tau_{\lambda}$.}
+
+The rate of decay is defined by $(1-\lambda)\lambda^{n-1}$, the half life  $\tau_{\lambda}$ is the moment in time ($n T_{sample}$) at which the weighting is half.
+
+If we know $\lambda$ and want to know the half life $\tau_{\lambda} = n T_s$ with n:
+\begin{equation}
+\begin{split}
+(1-\lambda)\lambda^{n-1} & = 0.5 \\
+\log(1-\lambda) + \log(\lambda)(n-1) & = \log(0.5) \\
+\log(\lambda)(n-1) & = \log(0.5) - \log(1-\lambda)\\
+(n-1) & = \frac{\log(0.5) - \log(1-\lambda)}{\log(\lambda)}\\
+n & = \frac{\log(0.5) - \log(1-\lambda)}{\log(\lambda)} + 1\\
+\end{split}
+\end{equation}
+
+If we know $\tau$ then $n=\frac{Ts}{\tau}$, then solve:
+\begin{equation}
+\begin{split}
+(1-\lambda)\lambda^{n-1} & = 0.5 \\
+(1-\lambda)\lambda^{\frac{Ts}{\tau}-1} & = 0.5 \\
+\end{split}
+\end{equation}
+
+\section{ex 12.3}
+\section{ex 12.4}
