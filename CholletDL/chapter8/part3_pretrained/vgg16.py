@@ -1,13 +1,13 @@
-import tensorflow as tf # type: ignore
-import tensorflow.keras as keras # type: ignore
-import tensorflow.keras.layers as layers # type: ignore
-import numpy as np
 from pathlib import Path
+import tensorflow.keras as keras  # type: ignore
+import tensorflow.keras.layers as layers  # type: ignore
+import numpy as np  # type: ignore
 from tensorflow.keras.utils import image_dataset_from_directory  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 
-
 dataset_dir = Path(__file__).parent.parent/"cats_vs_dogs_small"
+# dataset_dir = Path("../cats_vs_dogs_small")  # to use this with slime
+
 train_dataset = image_dataset_from_directory(
     directory=dataset_dir / "train",
     image_size=(180, 180),  # the default is 256*256
@@ -29,16 +29,20 @@ conv_base = keras.applications.vgg16.VGG16(
 
 conv_base.summary()
 
+
 def get_all_features_and_labels(dataset):
     all_features = []
     all_lables = []
     for images, labels in dataset:
+        # Preprocessing is independent of the model here.
         preprocessed_images = keras.applications.vgg16.preprocess_input(images)
+        # Conv_base has no top layer.
         features = conv_base.predict(preprocessed_images)
         all_features.append(features)
         all_lables.append(labels)
 
     return np.concatenate(all_features), np.concatenate(all_lables)
+
 
 train_features, train_labels = get_all_features_and_labels(train_dataset)
 val_features, val_labels = get_all_features_and_labels(validation_dataset)
@@ -53,7 +57,7 @@ model = keras.Model(inputs, outputs)
 
 model.compile(loss="binary_crossentropy",
               optimizer="rmsprop",
-              metrics = ["accuracy"])
+              metrics=["accuracy"])
 
 callbacks = [
     keras.callbacks.ModelCheckpoint(

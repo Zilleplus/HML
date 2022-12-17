@@ -53,7 +53,10 @@ callbacks = [
     keras.callbacks.ModelCheckpoint(
         filepath="feature_extraction_augmented.keras",
         save_best_only=True,
-        monitor="val_loss")]
+        monitor="val_loss"),
+    # If no improvement after 3 epochs -> early stop
+    keras.callbacks.EarlyStopping(patience=3)
+]
 
 history = model.fit(
     x=train_dataset,
@@ -71,11 +74,50 @@ plt.plot(epochs, acc, "bo", label="Train accuracy")
 plt.plot(epochs, val_acc, "b", label="validation accuracy")
 plt.title("Training and validation accuracy")
 plt.legend()
-plt.savefig('train_val_acc_augmented.png', bbox_inches='tight')
+plt.savefig('train_val_acc_augmented_before_tuned.png', bbox_inches='tight')
 plt.figure()
 plt.plot(epochs, loss, "bo", label="Train loss")
 plt.plot(epochs, val_loss, "b", label="validation loss")
 plt.title("Training and validation loss")
 plt.legend()
-plt.savefig('train_val_loss_augmented.png', bbox_inches='tight')
+plt.savefig('train_val_loss_augmented_before_tuned.png', bbox_inches='tight')
+plt.show()
+
+conv_base.trainable = True
+for layer in conv_base.layers[:-4]:  # all the layers but the last 4
+    layer.trainable = False
+
+callbacks = [
+    keras.callbacks.ModelCheckpoint(
+        filepath="feature_extraction_augmented.keras",
+        save_best_only=True,
+        monitor="val_loss"),
+    # If no improvement after 3 epochs -> early stop
+    keras.callbacks.EarlyStopping(patience=3)
+    ]
+
+history = model.fit(
+    x=train_dataset,
+    epochs=50,
+    validation_data=validation_dataset,
+    callbacks=callbacks)
+
+acc = history.history["accuracy"]
+val_acc = history.history["val_accuracy"]
+loss = history.history["loss"]
+val_loss = history.history["val_loss"]
+epochs = range(1, len(acc) + 1)
+
+plt.figure()
+plt.plot(epochs, acc, "bo", label="Train accuracy")
+plt.plot(epochs, val_acc, "b", label="validation accuracy")
+plt.title("Training and validation accuracy")
+plt.legend()
+plt.savefig('train_val_acc_augmented_tuned.png', bbox_inches='tight')
+plt.figure()
+plt.plot(epochs, loss, "bo", label="Train loss")
+plt.plot(epochs, val_loss, "b", label="validation loss")
+plt.title("Training and validation loss")
+plt.legend()
+plt.savefig('train_val_loss_augmented_tuned.png', bbox_inches='tight')
 plt.show()

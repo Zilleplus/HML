@@ -25,6 +25,8 @@ model.compile(loss="binary_crossentropy",
 
 
 dataset_dir = Path(__file__).parent.parent/"cats_vs_dogs_small"
+# dataset_dir = Path("../cats_vs_dogs_small")  # to use this with slime
+
 train_dataset = image_dataset_from_directory(
     directory=dataset_dir / "train",
     image_size=(180, 180),  # the default is 256*256

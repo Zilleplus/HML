@@ -1,8 +1,11 @@
+# Note: This takes quiet a while to run, probably best to
+# run this on a machine with a gpu.
 from pathlib import Path
-from email.mime import image
 from tensorflow import keras  # type: ignore
 from tensorflow.keras import layers  # type: ignore
 from tensorflow.keras.utils import image_dataset_from_directory  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
+
 
 data_augmentation = keras.Sequential(
     [
@@ -34,6 +37,8 @@ model.compile(loss="binary_crossentropy",
 
 
 dataset_dir = Path(__file__).parent.parent/"cats_vs_dogs_small"
+# dataset_dir = Path("../cats_vs_dogs_small")  # to use this with slime
+
 train_dataset = image_dataset_from_directory(
     directory=dataset_dir / "train",
     image_size=(180, 180),  # the default is 256*256
@@ -59,7 +64,6 @@ history = model.fit(
     validation_data=validation_dataset,
     callbacks=callbacks)
 
-import matplotlib.pyplot as plt  # type: ignore
 accuracy = history.history["accuracy"]
 val_accuracy = history.history["val_accuracy"]
 loss = history.history["loss"]
