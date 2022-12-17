@@ -1,8 +1,11 @@
-import os, shutil, pathlib
-from tracemalloc import start
+import os
+import shutil
+import pathlib
 
 original_dir = pathlib.Path("/home/zilleplus/Downloads/cats_vs_dogs/PetImages")
-new_base_dir = pathlib.Path(f"{pathlib.Path(__file__).parent}/cats_vs_dogs_small")
+new_base_dir = pathlib.Path(
+    f"{pathlib.Path(__file__).parent}/cats_vs_dogs_small")
+
 
 def make_subset(subset_name, start_index, end_index):
     for catergory in ("Cat", "Dog"):
