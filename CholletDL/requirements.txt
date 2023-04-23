@@ -1,0 +1,7 @@
+tensorflow==2.11.1
+tensorrt
+matplotlib
+mypy
+python-lsp-server
+pylsp-mypy
+ipython
